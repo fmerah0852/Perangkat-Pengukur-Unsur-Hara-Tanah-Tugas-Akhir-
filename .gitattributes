@@ -1,0 +1,22 @@
+# ========================================================
+# 🔹 NORMALIZE LINE ENDINGS
+# ========================================================
+# Always convert CRLF to LF on commit, and keep LF in repo
+* text eol=lf
+
+# ========================================================
+# 🔹 SPECIFIC LANGUAGE RULES
+# ========================================================
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.py text eol=lf
+*.ino text eol=lf
+*.cpp text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+
+*.dart text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.sh text eol=lf
