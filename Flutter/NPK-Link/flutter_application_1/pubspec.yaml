@@ -9,6 +9,25 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # Untuk UI (Icons)
+  cupertino_icons: ^1.0.2
+
+  # Library utama untuk Bluetooth Low Energy
+  flutter_blue_plus: ^1.31.20 # Cek versi terbaru di pub.dev
+
+  # Untuk State Management (mengelola data di seluruh aplikasi)
+  provider: ^6.0.5
+
+  # Untuk meminta izin Bluetooth & Lokasi
+  permission_handler: ^11.3.1
+
+  # Untuk mengirim data ke server
+  http: ^1.1.0
+
+  # Untuk memformat tanggal di halaman riwayat
+  intl: ^0.18.1
+
 
 dev_dependencies:
   flutter_test:
