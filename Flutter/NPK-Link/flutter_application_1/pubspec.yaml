@@ -28,6 +28,9 @@ dependencies:
   # Untuk memformat tanggal di halaman riwayat
   intl: ^0.18.1
 
+  #Untuk mendapatkan lokasi 
+  geolocator: ^10.1.0
+
 
 dev_dependencies:
   flutter_test:

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Pengukuran</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <style>
+        /* --- Reset & Font --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        /* --- Layout Utama (Sidebar + Konten) --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            grid-template-rows: 70px 1fr;
+            grid-template-areas:
+                "sidebar header"
+                "sidebar main";
+            height: 100vh;
+        }
+
+        /* --- Sidebar (Menu Kiri) --- */
+        .sidebar {
+            grid-area: sidebar;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+        }
+        .sidebar-title { font-size: 24px; font-weight: bold; margin-bottom: 30px; }
+        .sidebar-menu { list-style-type: none; padding: 0; }
+        .sidebar-menu li { padding: 15px 10px; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; cursor: pointer; }
+        .sidebar-menu li .material-icons-outlined { margin-right: 15px; }
+        .sidebar-menu .active { background-color: #1abc9c; }
+
+        /* --- Header (Menu Atas) --- */
+        .header {
+            grid-area: header;
+            background-color: #ffffff;
+            padding: 0 30px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        /* --- Main Content (Konten Utama) --- */
+        .main-content {
+            grid-area: main;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        
+        /* --- Detail Card --- */
+        .detail-card {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+            max-width: 800px;
+        }
+        .detail-card h1 { margin-top: 0; }
+        .detail-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+        }
+        .detail-item strong {
+            display: inline-block;
+            width: 180px;
+            color: #555;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #1890ff;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="grid-container">
+        
+        <aside class="sidebar">
+            <div class="sidebar-title">NutriSync</div>
+            <ul class="sidebar-menu">
+                <li class="active">
+                    <span class="material-icons-outlined">dashboard</span> Dashboard
+                </li>
+                </ul>
+        </aside>
+
+        <header class="header">
+            <strong>Detail Pengukuran</strong>
+        </header>
+
+        <main class="main-content">
+
+            <a href="/" class="back-link">
+                &larr; Kembali ke Dashboard
+            </a>
+
+            <div class="detail-card">
+                <h1>Laporan Detail</h1>
+                <div class="detail-item"><strong>ID Pengukuran:</strong> {{ data._id }}</div>
+                <div class="detail-item"><strong>Waktu:</strong> {{ data.timestamp }}</div>
+                
+                <h3>Nilai NPK</h3>
+                <div class="detail-item"><strong>Nitrogen (N):</strong> {{ data.n }} mg/kg</div>
+                <div class="detail-item"><strong>Phosphorus (P):</strong> {{ data.p }} mg/kg</div>
+                <div class="detail-item"><strong>Potassium (K):</strong> {{ data.k }} mg/kg</div>
+                
+                <h3>Nilai Lainnya</h3>
+                <div class="detail-item"><strong>pH:</strong> {{ data.ph }}</div>
+                <div class="detail-item"><strong>EC:</strong> {{ data.ec }} µS/cm</div>
+                <div class="detail-item"><strong>Temperatur:</strong> {{ data.temp }} °C</div>
+                <div class="detail-item"><strong>Kelembaban:</strong> {{ data.hum }} %</div>
+                
+                <h3>Lokasi</h3>
+                <div class="detail-item"><strong>Latitude:</strong> {{ data.location.latitude }}</div>
+                <div class="detail-item"><strong>Longitude:</strong> {{ data.location.longitude }}</div>
+            </div>
+
+        </main>
+
+    </div>
+
+</body>
+</html>

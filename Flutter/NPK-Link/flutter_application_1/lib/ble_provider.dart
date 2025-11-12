@@ -6,6 +6,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import 'sensor_data.dart';
+import 'package:geolocator/geolocator.dart';
 
 // --- Konfigurasi dari kode ESP32 Anda ---
 const String DEVICE_NAME = "ESP32_NPK_DUMMY";
@@ -86,6 +87,36 @@ class BleProvider with ChangeNotifier {
       }
     }
   }
+  Future<Map<String, dynamic>> _getCurrentLocation() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    throw Exception('Location services are disabled.');
+  }
+
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      throw Exception('Location permissions are denied');
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    throw Exception('Location permissions are permanently denied.');
+  } 
+
+  Position position = await Geolocator.getCurrentPosition(
+    desiredAccuracy: LocationAccuracy.high
+  );
+
+  return {
+    'latitude': position.latitude,
+    'longitude': position.longitude
+  };
+}
 
   Future<void> _discoverServices() async {
     if (_connectedDevice == null) return;
@@ -132,38 +163,44 @@ class BleProvider with ChangeNotifier {
 
   // --- Halaman 2: Fungsi Sync ke Server ---
   Future<String> syncDataToServer() async {
-    if (_historyList.isEmpty) {
-      return "Tidak ada data baru untuk dikirim.";
-    }
-    
-    _isSyncing = true;
-    notifyListeners();
-    
-    try {
-      // Ubah list data menjadi JSON array
-      String jsonBody = jsonEncode(_historyList.map((data) => data.toJson()).toList());
-      
-      final response = await http.post(
-        Uri.parse(SERVER_URL),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonBody,
-      ).timeout(const Duration(seconds: 10));
-
-      _isSyncing = false;
-      if (response.statusCode == 200) {
-        _historyList.clear(); // Kosongkan riwayat jika berhasil
-        notifyListeners();
-        return "Sinkronisasi berhasil!";
-      } else {
-        notifyListeners();
-        return "Gagal mengirim: ${response.statusCode} ${response.body}";
-      }
-    } catch (e) {
-      _isSyncing = false;
-      notifyListeners();
-      return "Error: $e";
-    }
+  if (_historyList.isEmpty) {
+    return "Tidak ada data baru untuk dikirim.";
   }
+
+  _isSyncing = true;
+  notifyListeners();
+
+  try {
+    // 1. Ambil Lokasi GPS
+    final Map<String, dynamic> location = await _getCurrentLocation();
+
+    // 2. Ubah list data menjadi JSON array (sekarang menyertakan lokasi)
+    String jsonBody = jsonEncode(
+      _historyList.map((data) => data.toJson(location)).toList() // <-- Berikan lokasi
+    );
+
+    // 3. Kirim ke server
+    final response = await http.post(
+      Uri.parse(SERVER_URL),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonBody,
+    ).timeout(const Duration(seconds: 10));
+
+    _isSyncing = false;
+    if (response.statusCode == 200) {
+      _historyList.clear(); 
+      notifyListeners();
+      return "Sinkronisasi berhasil!";
+    } else {
+      notifyListeners();
+      return "Gagal mengirim: ${response.statusCode} ${response.body}";
+    }
+  } catch (e) {
+    _isSyncing = false;
+    notifyListeners();
+    return "Error: $e"; // Ini akan menampilkan error jika izin lokasi ditolak
+  }
+}
 
   void _updateStatus(String status) {
     _connectionStatus = status;

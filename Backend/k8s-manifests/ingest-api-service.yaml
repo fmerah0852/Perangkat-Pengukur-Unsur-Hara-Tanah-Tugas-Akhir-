@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingest-api-service
+spec:
+  type: ClusterIP
+  selector:
+    app: ingest-api
+  ports:
+  - protocol: TCP
+    port: 5000
+    targetPort: 5000

@@ -51,16 +51,18 @@ class SensorData {
   }
   
   // Fungsi untuk mengubah data menjadi JSON (untuk dikirim ke server)
-  Map<String, dynamic> toJson() {
-    return {
-      'timestamp': timestamp.toIso8601String(), // Format standar untuk server
-      'temp': temp,
-      'hum': hum,
-      'ec': ec,
-      'ph': ph,
-      'n': n,
-      'p': p,
-      'k': k,
-    };
-  }
+Map<String, dynamic> toJson(Map<String, dynamic> location) { // <-- Terima parameter lokasi
+  return {
+    'timestamp': timestamp.toIso8601String(),
+    'temp': temp,
+    'hum': hum,
+    'ec': ec,
+    'ph': ph,
+    'n': n,
+    'p': p,
+    'k': k,
+    'location': location, // <-- Tambahkan lokasi ke JSON
+  };
+ }
+ 
 }
