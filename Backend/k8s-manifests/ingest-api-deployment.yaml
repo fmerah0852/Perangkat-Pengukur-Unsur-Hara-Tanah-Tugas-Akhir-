@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: ingest-api
-        image: alfredmanurung/npk:v2 # Nama image yang sama
+        image: alfredmanurung/npk:v3 # Nama image yang sama
         imagePullPolicy: Always 
         ports:
         - containerPort: 5000

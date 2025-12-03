@@ -4,11 +4,16 @@ import 'package:provider/provider.dart';
 import 'ble_provider.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/history_page.dart';
+import 'auth_provider.dart'; // Tambahkan ini
+import 'pages/login_page.dart'; // Tambahkan ini
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => BleProvider(),
+    MultiProvider( // Gunakan MultiProvider karena sekarang ada 2 provider
+      providers: [
+        ChangeNotifierProvider(create: (_) => BleProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()), // Provider Baru
+      ],
       child: const MyApp(),
     ),
   );
@@ -23,20 +28,26 @@ class MyApp extends StatelessWidget {
       title: 'NutriSync',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.light, // Menggunakan tema terang
-        scaffoldBackgroundColor: const Color(0xFFF4F6F8), // Latar belakang abu-abu
-        primaryColor: Colors.deepPurple, // Warna utama
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF4F6F8),
+        primaryColor: Colors.deepPurple,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 1,
           iconTheme: IconThemeData(color: Colors.black),
-          titleTextStyle: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+          titleTextStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
-      home: const MainNavigator(),
+      home: const LoginPage(),
     );
   }
 }
+
+
 
 // Widget ini mengatur Bottom Navigation Bar
 class MainNavigator extends StatefulWidget {
