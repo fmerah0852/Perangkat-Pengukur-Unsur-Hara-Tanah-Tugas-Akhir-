@@ -1,18 +1,20 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'auth_provider.dart';
 import 'ble_provider.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/history_page.dart';
-import 'auth_provider.dart'; // Tambahkan ini
-import 'pages/login_page.dart'; // Tambahkan ini
+import 'pages/login_page.dart';
 
 void main() {
   runApp(
-    MultiProvider( // Gunakan MultiProvider karena sekarang ada 2 provider
+    MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => BleProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()), // Provider Baru
+        // ✅ Load history saat app start
+        ChangeNotifierProvider(create: (_) => BleProvider()..init()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: const MyApp(),
     ),
@@ -47,9 +49,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
-
-// Widget ini mengatur Bottom Navigation Bar
+/// Widget ini mengatur Bottom Navigation Bar
 class MainNavigator extends StatefulWidget {
   const MainNavigator({super.key});
 
@@ -58,23 +58,27 @@ class MainNavigator extends StatefulWidget {
 }
 
 class _MainNavigatorState extends State<MainNavigator> {
-  int _selectedIndex = 0; // Halaman 0 adalah halaman pertama
+  int _selectedIndex = 0;
 
   static const List<Widget> _pages = <Widget>[
-    DashboardPage(), // Halaman 1 (Grid)
-    HistoryPage(),   // Halaman 2 (Riwayat & Sync)
+    DashboardPage(),
+    HistoryPage(),
   ];
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSyncing = context.watch<BleProvider>().isSyncing;
+
     return Scaffold(
-      body: _pages.elementAt(_selectedIndex),
+      // ✅ IndexedStack: tab tidak di-dispose saat pindah tab (hindari crash SnackBar)
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -88,7 +92,8 @@ class _MainNavigatorState extends State<MainNavigator> {
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.deepPurple,
-        onTap: _onItemTapped,
+        // ✅ cegah pindah tab saat sedang sync (menghindari assert _dependents)
+        onTap: isSyncing ? null : _onItemTapped,
       ),
     );
   }

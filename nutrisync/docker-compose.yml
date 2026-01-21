@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: nutrisync
+      POSTGRES_PASSWORD: nutrisyncpass
+      POSTGRES_DB: nutrisync_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # auto-run migration saat container pertama kali dibuat
+      - ./db/migrations:/docker-entrypoint-initdb.d:ro
+
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgres://nutrisync:nutrisyncpass@postgres:5432/nutrisync_db?sslmode=disable
+      PORT: "8080"
+      CORS_ORIGINS: "http://localhost:3000"
+      NOMINATIM_USER_AGENT: "nutrisync-ta/1.0"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  web:
+    build: ./web/nutrisync
+    environment:
+      # Server-side fetch Next.js akan pakai ini.
+      API_BASE_URL: "http://api:8080"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

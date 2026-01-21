@@ -10,7 +10,13 @@ class SensorData {
   final double n;
   final double p;
   final double k;
+
+  // ✅ lokasi yang disimpan saat tombol "Simpan Data" ditekan
+  final double? latitude;
+  final double? longitude;
+
   bool isSelected;
+  String? note;
 
   SensorData({
     required this.timestamp,
@@ -21,15 +27,18 @@ class SensorData {
     this.n = 0.0,
     this.p = 0.0,
     this.k = 0.0,
+    this.latitude,
+    this.longitude,
     this.isSelected = false,
+    this.note,
   });
 
-  // Factory constructor untuk membuat instance dari JSON string ESP32
+  /// Membuat object dari data JSON string (dari BLE)
   factory SensorData.fromJsonString(String jsonString) {
     try {
       final Map<String, dynamic> json = jsonDecode(jsonString);
       return SensorData(
-        timestamp: DateTime.now(), // Set timestamp saat data diterima
+        timestamp: DateTime.now(),
         temp: (json['temp'] as num?)?.toDouble() ?? 0.0,
         hum: (json['hum'] as num?)?.toDouble() ?? 0.0,
         ec: (json['ec'] as num?)?.toDouble() ?? 0.0,
@@ -37,29 +46,25 @@ class SensorData {
         n: (json['n'] as num?)?.toDouble() ?? 0.0,
         p: (json['p'] as num?)?.toDouble() ?? 0.0,
         k: (json['k'] as num?)?.toDouble() ?? 0.0,
-        isSelected: false,
+        // lokasi tidak dari BLE
+        latitude: null,
+        longitude: null,
       );
     } catch (e) {
+      // ignore: avoid_print
       print("Error parsing JSON: $e");
-      return SensorData.initial(); // Kembalikan data default jika ada error parsing
+      return SensorData.initial();
     }
   }
 
-  // State awal (data kosong)
-  factory SensorData.initial() {
-    return SensorData(
-      timestamp: DateTime.now(),
-      temp: 0.0, hum: 0.0, ec: 0.0, ph: 0.0, n: 0.0, p: 0.0, k: 0.0,
-      isSelected: false,
-    );
-  }
-  
-  // --- FUNGSI INI YANG DIUBAH ---
-  // Fungsi untuk mengubah data menjadi JSON untuk dikirim ke server
-  // Sekarang menerima 'location' DAN 'username'
-  Map<String, dynamic> toJson(Map<String, dynamic> location, String username) { 
+  factory SensorData.initial() => SensorData(timestamp: DateTime.now());
+
+  /// JSON untuk server (lokasi diambil dari data ini, bukan dari sync)
+  Map<String, dynamic> toJson(String username) {
+    final String cleanedNote = (note ?? '').trim();
+
     return {
-      'timestamp': timestamp.toIso8601String(),
+      'timestamp': timestamp.toUtc().toIso8601String(),
       'temp': temp,
       'hum': hum,
       'ec': ec,
@@ -67,39 +72,59 @@ class SensorData {
       'n': n,
       'p': p,
       'k': k,
-      'location': location, 
-      'user': username, // <--- Username ditambahkan di sini
+      'location': {
+        'latitude': latitude,
+        'longitude': longitude,
+      },
+      'user': username,
+      if (cleanedNote.isNotEmpty) 'note': cleanedNote,
     };
   }
 
-  // --- Fungsi Lokal (Tidak Perlu Diubah) ---
-  // Menyimpan ke penyimpanan lokal HP (SharedPreferences/SQLite)
+  /// JSON untuk penyimpanan lokal (SharedPreferences)
   Map<String, dynamic> toLocalJson() {
+    final String cleanedNote = (note ?? '').trim();
+
     return {
+      'timestamp': timestamp.toIso8601String(),
+      'temp': temp,
+      'hum': hum,
+      'ec': ec,
+      'ph': ph,
       'n': n,
       'p': p,
       'k': k,
-      'ph': ph,
-      'temp': temp,
-      'ec': ec,
-      'hum': hum,
-      'timestamp': timestamp.toIso8601String(),
+      'latitude': latitude,
+      'longitude': longitude,
       'isSelected': isSelected,
+      if (cleanedNote.isNotEmpty) 'note': cleanedNote,
     };
   }
 
-  // Memuat dari penyimpanan lokal HP
   factory SensorData.fromLocalJson(Map<String, dynamic> json) {
+    final String? rawNote = json['note'] as String?;
+    final String? cleaned =
+        rawNote == null ? null : rawNote.trim().isEmpty ? null : rawNote.trim();
+
+    final latRaw = json['latitude'];
+    final lonRaw = json['longitude'];
+
+    final double? lat = latRaw is num ? latRaw.toDouble() : null;
+    final double? lon = lonRaw is num ? lonRaw.toDouble() : null;
+
     return SensorData(
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      temp: (json['temp'] as num).toDouble(),
+      hum: (json['hum'] as num).toDouble(),
+      ec: (json['ec'] as num).toDouble(),
+      ph: (json['ph'] as num).toDouble(),
       n: (json['n'] as num).toDouble(),
       p: (json['p'] as num).toDouble(),
       k: (json['k'] as num).toDouble(),
-      ph: (json['ph'] as num).toDouble(),
-      temp: (json['temp'] as num).toDouble(),
-      ec: (json['ec'] as num).toDouble(),
-      hum: (json['hum'] as num).toDouble(),
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      latitude: lat,
+      longitude: lon,
       isSelected: json['isSelected'] as bool? ?? false,
+      note: cleaned,
     );
   }
 }

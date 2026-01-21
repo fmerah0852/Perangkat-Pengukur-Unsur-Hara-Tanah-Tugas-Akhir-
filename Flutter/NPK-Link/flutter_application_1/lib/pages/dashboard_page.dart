@@ -2,30 +2,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../ble_provider.dart';
-import '../widgets/stat_card.dart'; // Widget kartu kustom
+import '../widgets/stat_card.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Gunakan 'Consumer' untuk mendengarkan perubahan dari BleProvider
     return Consumer<BleProvider>(
       builder: (context, provider, child) {
-        
         final data = provider.currentData;
         final status = provider.connectionStatus;
         final isConnected = provider.connectedDevice != null;
+        final isSaving = provider.isSaving;
 
         return Scaffold(
           appBar: AppBar(
             title: const Text("NutriSync Dashboard"),
             centerTitle: true,
             actions: [
-              // Tombol Scan/Status Bluetooth
               IconButton(
                 icon: Icon(
-                  isConnected ? Icons.bluetooth_connected : Icons.bluetooth_searching,
+                  isConnected
+                      ? Icons.bluetooth_connected
+                      : Icons.bluetooth_searching,
                   color: isConnected ? Colors.blueAccent : Colors.grey,
                 ),
                 onPressed: () {
@@ -33,33 +33,34 @@ class DashboardPage extends StatelessWidget {
                 },
               ),
             ],
-            // Menampilkan status koneksi di bawah AppBar
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(24.0),
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: Text(
                   status,
-                  style: const TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             ),
           ),
-        body: Column(
+          body: Column(
             children: [
-              // 1. Buat GridView-nya bisa di-scroll dan mengisi ruang
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: GridView(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, // 2 kolom
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
                       crossAxisSpacing: 16,
                       mainAxisSpacing: 16,
-                      childAspectRatio: 1.2, // Atur rasio kartu
+                      childAspectRatio: 1.2,
                     ),
                     children: [
-                      // --- (Semua StatCard Anda tetap di sini) ---
                       StatCard(
                         title: "Temp°C",
                         value: data.temp.toStringAsFixed(1),
@@ -88,7 +89,7 @@ class DashboardPage extends StatelessWidget {
                         title: "N mg/kg",
                         value: data.n.toStringAsFixed(0),
                         icon: Icons.grass,
-                        color: Colors.red.shade700,
+                        color: Colors.red,
                       ),
                       StatCard(
                         title: "P mg/kg",
@@ -106,37 +107,50 @@ class DashboardPage extends StatelessWidget {
                         title: "Fertility mg/kg",
                         value: "-",
                         icon: Icons.agriculture,
-                        color: Colors.yellow.shade700,
+                        color: Colors.amber,
                       ),
                     ],
                   ),
                 ),
               ),
-              
-              // --- 2. TAMBAHKAN TOMBOL SIMPAN DI BAWAH GRID ---
+
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.save_alt),
-                    label: const Text("Simpan Data Ini ke Riwayat"),
-                    onPressed: isConnected ? () { // Hanya bisa diklik jika terhubung
-                      
-                      // Panggil fungsi baru di provider
-                      provider.saveCurrentDataToHistory();
-                      
-                      // Beri notifikasi ke pengguna
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Data saat ini disimpan ke Riwayat."),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
+                    icon: isSaving
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.save_alt),
+                    label: Text(
+                      isSaving
+                          ? "Menyimpan..."
+                          : "Simpan Data Ini ke Riwayat",
+                    ),
+                    onPressed: (!isConnected || isSaving)
+                        ? null
+                        : () async {
+                            final msg =
+                                await provider.saveCurrentDataToHistory();
 
-                    } : null, // Tombol nonaktif jika tidak terhubung
+                            if (!context.mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(msg),
+                                backgroundColor: Colors.green.shade700,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade700,
                       foregroundColor: Colors.white,
