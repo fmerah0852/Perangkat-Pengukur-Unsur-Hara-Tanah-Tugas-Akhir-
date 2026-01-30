@@ -39,6 +39,18 @@ func strOrNil(s string) *string {
 	return &s
 }
 
+// Helper untuk pointer string (jika input sudah pointer)
+func ptrStrOrNil(s *string) *string {
+	if s == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*s)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
 func floatPtr(n sql.NullFloat64) *float64 {
 	if !n.Valid {
 		return nil
@@ -120,13 +132,21 @@ func (api *API) HandleReceiveData(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// trim note biar rapi
+		// trim note & project_name biar rapi
 		if batch[i].Note != nil {
 			t := strings.TrimSpace(*batch[i].Note)
 			if t == "" {
 				batch[i].Note = nil
 			} else {
 				batch[i].Note = &t
+			}
+		}
+		if batch[i].ProjectName != nil {
+			t := strings.TrimSpace(*batch[i].ProjectName)
+			if t == "" {
+				batch[i].ProjectName = nil
+			} else {
+				batch[i].ProjectName = &t
 			}
 		}
 	}
@@ -150,12 +170,12 @@ func (api *API) insertMeasurements(ctx context.Context, batch []MeasurementInput
 	}
 	defer tx.Rollback(ctx)
 
-	
+	// ✅ UPDATE QUERY: Tambah project_name ($15)
 	q := `
 		INSERT INTO measurements
-			(user_name, timestamp_text, timestamp_ts, n, p, k, ph, ec, temp, hum, latitude, longitude, location_name, note)
+			(user_name, timestamp_text, timestamp_ts, n, p, k, ph, ec, temp, hum, latitude, longitude, location_name, note, project_name)
 		VALUES
-			($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+			($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 	`
 
 	count := 0
@@ -181,7 +201,8 @@ func (api *API) insertMeasurements(ctx context.Context, batch []MeasurementInput
 			m.Location.Latitude,      // $11
 			m.Location.Longitude,     // $12
 			strOrNil(m.LocationName), // $13
-			m.Note,                   // $14 ✅ note
+			m.Note,                   // $14 note
+			m.ProjectName,            // $15 ✅ project_name
 		)
 		if err != nil {
 			return 0, err
@@ -239,6 +260,7 @@ func (api *API) HandleMeasurementDetail(w http.ResponseWriter, r *http.Request) 
 }
 
 func (api *API) fetchMeasurements(ctx context.Context) ([]Measurement, error) {
+	// ✅ UPDATE QUERY: Tambah project_name di SELECT
 	rows, err := api.db.Query(ctx, `
 		SELECT
 			id::text,
@@ -250,7 +272,8 @@ func (api *API) fetchMeasurements(ctx context.Context) ([]Measurement, error) {
 			timestamp_text,
 			timestamp_ts,
 			created_at,
-			note
+			note,
+			project_name
 		FROM measurements
 		ORDER BY COALESCE(timestamp_ts, created_at) DESC
 	`)
@@ -278,6 +301,7 @@ func (api *API) fetchMeasurements(ctx context.Context) ([]Measurement, error) {
 			tsParsed  sql.NullTime
 			createdAt time.Time
 			note      sql.NullString
+			projName  sql.NullString // ✅ Var baru
 		)
 
 		if err := rows.Scan(
@@ -291,6 +315,7 @@ func (api *API) fetchMeasurements(ctx context.Context) ([]Measurement, error) {
 			&tsParsed,
 			&createdAt,
 			&note,
+			&projName, // ✅ Scan project_name
 		); err != nil {
 			return nil, err
 		}
@@ -321,7 +346,8 @@ func (api *API) fetchMeasurements(ctx context.Context) ([]Measurement, error) {
 				Longitude: floatPtr(lon),
 			},
 			LocationName: strings.TrimSpace(locName.String),
-			Note:         strPtr(note), // ✅ kirim note ke web
+			Note:         strPtr(note),
+			ProjectName:  strPtr(projName), // ✅ Masukkan ke struct output
 		}
 
 		out = append(out, m)
@@ -331,6 +357,7 @@ func (api *API) fetchMeasurements(ctx context.Context) ([]Measurement, error) {
 }
 
 func (api *API) fetchMeasurementByID(ctx context.Context, id string) (Measurement, error) {
+	// ✅ UPDATE QUERY: Tambah project_name di SELECT
 	row := api.db.QueryRow(ctx, `
 		SELECT
 			id::text,
@@ -342,7 +369,8 @@ func (api *API) fetchMeasurementByID(ctx context.Context, id string) (Measuremen
 			timestamp_text,
 			timestamp_ts,
 			created_at,
-			note
+			note,
+			project_name
 		FROM measurements
 		WHERE id = $1
 	`, id)
@@ -364,6 +392,7 @@ func (api *API) fetchMeasurementByID(ctx context.Context, id string) (Measuremen
 		tsParsed  sql.NullTime
 		createdAt time.Time
 		note      sql.NullString
+		projName  sql.NullString // ✅ Var baru
 	)
 
 	if err := row.Scan(
@@ -377,6 +406,7 @@ func (api *API) fetchMeasurementByID(ctx context.Context, id string) (Measuremen
 		&tsParsed,
 		&createdAt,
 		&note,
+		&projName, // ✅ Scan project_name
 	); err != nil {
 		return Measurement{}, err
 	}
@@ -406,6 +436,7 @@ func (api *API) fetchMeasurementByID(ctx context.Context, id string) (Measuremen
 			Longitude: floatPtr(lon),
 		},
 		LocationName: strings.TrimSpace(locName.String),
-		Note:         strPtr(note), // ✅ detail juga ada note
+		Note:         strPtr(note),
+		ProjectName:  strPtr(projName), // ✅ Masukkan ke struct output
 	}, nil
 }

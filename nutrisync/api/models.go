@@ -20,7 +20,8 @@ type MeasurementInput struct {
 
 	Location Location `json:"location"`
 
-	Note *string `json:"note,omitempty"` // ✅ add
+	Note        *string `json:"note,omitempty"`         // Field Note
+	ProjectName *string `json:"project_name,omitempty"` // ✅ FITUR BARU: Project Name
 }
 
 type Measurement struct {
@@ -37,7 +38,8 @@ type Measurement struct {
 	Location     Location `json:"location"`
 	LocationName string   `json:"location_name"`
 
-	Note *string `json:"note,omitempty"` // ✅ add
+	Note        *string `json:"note,omitempty"`         // Field Note
+	ProjectName *string `json:"project_name,omitempty"` // ✅ FITUR BARU: Project Name
 }
 
 type DashboardResponse struct {

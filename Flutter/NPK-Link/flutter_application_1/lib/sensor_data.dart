@@ -11,7 +11,7 @@ class SensorData {
   final double p;
   final double k;
 
-  // ✅ lokasi yang disimpan saat tombol "Simpan Data" ditekan
+  // lokasi yang disimpan saat tombol "Simpan Data" ditekan
   final double? latitude;
   final double? longitude;
 
@@ -46,7 +46,6 @@ class SensorData {
         n: (json['n'] as num?)?.toDouble() ?? 0.0,
         p: (json['p'] as num?)?.toDouble() ?? 0.0,
         k: (json['k'] as num?)?.toDouble() ?? 0.0,
-        // lokasi tidak dari BLE
         latitude: null,
         longitude: null,
       );
@@ -59,9 +58,11 @@ class SensorData {
 
   factory SensorData.initial() => SensorData(timestamp: DateTime.now());
 
-  /// JSON untuk server (lokasi diambil dari data ini, bukan dari sync)
-  Map<String, dynamic> toJson(String username) {
+  /// JSON untuk server
+  /// ✅ UPDATE: Menambahkan parameter projectName
+  Map<String, dynamic> toJson(String username, {String? projectName}) {
     final String cleanedNote = (note ?? '').trim();
+    final String cleanedProject = (projectName ?? '').trim();
 
     return {
       'timestamp': timestamp.toUtc().toIso8601String(),
@@ -77,6 +78,8 @@ class SensorData {
         'longitude': longitude,
       },
       'user': username,
+      // Jika project name diisi, kirim ke server
+      if (cleanedProject.isNotEmpty) 'project_name': cleanedProject,
       if (cleanedNote.isNotEmpty) 'note': cleanedNote,
     };
   }

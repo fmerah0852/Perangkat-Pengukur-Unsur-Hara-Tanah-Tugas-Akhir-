@@ -27,6 +27,9 @@ export type Measurement = {
 
   // ✅ fitur baru: keterangan dari Flutter
   note?: string | null;
+  
+  // ✅ fitur baru: Grouping Projek
+  project_name?: string | null;
 
   // opsional kalau backend mengirim
   created_at?: string | null;
@@ -47,8 +50,10 @@ export function getMeasurementId(m: Measurement): string {
   return (m.id ?? m._id ?? "").toString();
 }
 
-export function safeNumber(v: number | null | undefined): string {
+export function safeNumber(v: number | null | undefined, decimals = 1): string {
   if (v === null || v === undefined) return "N/A";
   if (Number.isNaN(v)) return "N/A";
-  return String(v);
+  // Jika bulat, jangan pakai desimal. Jika pecahan, pakai fixed.
+  if (Number.isInteger(v)) return String(v);
+  return v.toFixed(decimals);
 }

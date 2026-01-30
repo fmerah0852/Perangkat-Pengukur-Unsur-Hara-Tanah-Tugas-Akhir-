@@ -1,3 +1,4 @@
+// lib/pages/history_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -5,7 +6,8 @@ import 'package:intl/intl.dart';
 import '../auth_provider.dart';
 import '../ble_provider.dart';
 import '../sensor_data.dart';
-import '../widgets/note_dialog.dart';
+import '../widgets/note_dialog.dart'; // Masih dipakai untuk edit note per item
+import '../widgets/sync_dialog.dart'; // ✅ NEW: Import SyncDialog
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -106,44 +108,62 @@ class _HistoryPageState extends State<HistoryPage> {
                     label: Text(
                       provider.isSyncing
                           ? "Mengirim..."
-                          : "Sync $selectedCount Data Terpilih",
+                          : "Buat Projek & Sync ($selectedCount)",
                     ),
                     onPressed: selectedCount == 0 || provider.isSyncing
                         ? null
                         : () async {
                             final messenger = ScaffoldMessenger.maybeOf(context);
                             final auth = context.read<AuthProvider>();
+                            
+                            final user = auth.username; 
+                            final url = auth.serverUrl;
 
-                            final note = await showDialog<String?>(
+                            if (url == null || url.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Server URL kosong. Silakan Login ulang."),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            // ✅ STEP 1: Munculkan SyncDialog untuk input Nama Projek & Note
+                            final result = await showDialog<Map<String, String>?>(
                               context: context,
-                              builder: (_) => const NoteDialog(
-                                title: 'Tambahkan note untuk data terpilih',
-                                helperText:
-                                    'Note ini dikirim ke API untuk SEMUA data yang dipilih (kosongkan bila tidak perlu).',
-                              ),
+                              builder: (_) => const SyncDialog(),
                             );
 
                             if (!mounted) return;
-                            if (note == null) return;
+                            if (result == null) return; // User tekan Batal
+
+                            final projectName = result['projectName']!;
+                            final note = result['note']!;
 
                             final ble = context.read<BleProvider>();
-                            if (note.trim().isNotEmpty) {
+                            
+                            // ✅ STEP 2: Jika ada note, update data lokal dulu (opsional, tapi bagus buat UX)
+                            if (note.isNotEmpty) {
                               ble.setNoteForSelected(note);
                             }
 
-                            final user = auth.currentUser;
-
-                            String result;
+                            String msgResult;
                             try {
-                              result = await ble.syncDataToServer(user);
+                              // ✅ STEP 3: Panggil sync dengan parameter projectName
+                              msgResult = await ble.syncDataToServer(
+                                user ?? "Unknown", 
+                                url, 
+                                projectName // Kirim nama projek
+                              );
                             } catch (e) {
-                              result = "Sync gagal: $e";
+                              msgResult = "Sync gagal: $e";
                             }
 
                             if (!mounted) return;
 
                             (messenger ?? ScaffoldMessenger.of(context)).showSnackBar(
-                              SnackBar(content: Text(result)),
+                              SnackBar(content: Text(msgResult)),
                             );
                           },
                     style: ElevatedButton.styleFrom(
@@ -193,7 +213,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                   "pH: ${data.ph.toStringAsFixed(1)}, "
                                   "T: ${data.temp.toStringAsFixed(1)}°C",
                                 )
-                                ..write("\nLokasi: $locText");
+                                ..write("\nLokasi (Saved): $locText");
 
                               if (noteText.isNotEmpty) {
                                 subtitle.write("\nNote: $noteText");
@@ -216,6 +236,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                       tooltip: "Edit note",
                                       icon: const Icon(Icons.edit_note),
                                       onPressed: () async {
+                                        // Gunakan NoteDialog lama untuk edit note per item
                                         final updated = await showDialog<String?>(
                                           context: context,
                                           builder: (_) => NoteDialog(

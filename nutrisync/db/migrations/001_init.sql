@@ -19,9 +19,14 @@ CREATE TABLE IF NOT EXISTS measurements (
   longitude DOUBLE PRECISION,
   location_name TEXT,
 
- 
+  -- ✅ FITUR BARU: Kolom Project Name
+  project_name TEXT, 
+
   timestamp_text TEXT,
   timestamp_ts TIMESTAMPTZ,
+  
+  -- ✅ FITUR BARU: Kolom Note (sudah ada di update sebelumnya, tapi pastikan ada)
+  note TEXT,
 
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
